@@ -4,8 +4,8 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "cnl-challenge/smr-reactor-design-optimizer/docs/**"
-      - ".github/workflows/deploy-smr-pages.yml"
+      - "IDEAS-Clinic-Co-op-Winter-2026/cnl-challenge/smr-reactor-design-optimizer/docs/**"
+      - "IDEAS-Clinic-Co-op-Winter-2026/.github/workflows/deploy-smr-pages.yml"
   workflow_dispatch:
 
 permissions:
