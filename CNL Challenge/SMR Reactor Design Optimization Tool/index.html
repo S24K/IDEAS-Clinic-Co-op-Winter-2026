@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMR Reactor Design Optimization Tool</title>
+  <meta name="description" content="A Python + Streamlit application for exploring SMR fuel rod design, fuel-cycle economics, and lifecycle cost per MWh." />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #182245;
+      --text: #eaf0ff;
+      --muted: #aeb9d9;
+      --accent: #7aa2ff;
+      --accent-2: #9fe7d8;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 20px 50px rgba(0,0,0,0.35);
+      --max: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(122,162,255,0.18), transparent 28%),
+        radial-gradient(circle at top left, rgba(159,231,216,0.12), transparent 24%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { width: min(var(--max), calc(100vw - 32px)); margin: 0 auto; }
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(10px);
+      background: rgba(11,16,32,0.7);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0;
+      gap: 12px;
+    }
+    .brand { font-weight: 700; letter-spacing: 0.2px; }
+    .nav-links { display: flex; gap: 18px; flex-wrap: wrap; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    .hero {
+      padding: 72px 0 44px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+      color: var(--accent-2);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -1.2px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 760px;
+      margin-bottom: 22px;
+    }
+    .cta-row {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 18px; border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-weight: 600;
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), #577bff);
+      color: #081022;
+      border: none;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+    .hero-card .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+    }
+    .metric .label { color: var(--muted); font-size: 13px; }
+    .metric .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
+    section { padding: 26px 0; }
+    .section-title {
+      font-size: 28px;
+      margin: 0 0 12px;
+      letter-spacing: -0.4px;
+    }
+    .section-sub { color: var(--muted); margin: 0 0 18px; }
+    .grid-3, .grid-2 {
+      display: grid; gap: 18px;
+    }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin-top: 0; margin-bottom: 8px; font-size: 20px; }
+    .card p { margin: 0; color: var(--muted); }
+    ul.clean {
+      margin: 10px 0 0 18px;
+      padding: 0;
+    }
+    ul.clean li { margin: 6px 0; color: var(--muted); }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .step {
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .step .num {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      background: var(--accent); color: #081022; font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .code {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      background: #0a1229;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      color: #d7e2ff;
+    }
+    .footer {
+      padding: 36px 0 50px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 920px) {
+      .hero-grid, .grid-3, .grid-2, .workflow { grid-template-columns: 1fr; }
+      .hero { padding-top: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <div class="brand">SMR Reactor Design Optimization Tool</div>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#how">How It Works</a>
+        <a href="#metrics">Metrics</a>
+        <a href="#tech">Tech Stack</a>
+        <a href="#setup">Setup</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Python • Streamlit • Fuel-cycle economics</div>
+        <h1>Optimize SMR fuel rod design with physics-informed cost modeling.</h1>
+        <p class="subtitle">
+          This project is an interactive SMR fuel rod optimization tool that combines simplified reactor physics,
+          burnup-based lifetime estimation, and fuel-cycle cost modeling to compare design trade-offs across fuel types,
+          materials, and operating modes.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="#setup">Get Started</a>
+          <a class="btn" href="#how">See the model flow</a>
+        </div>
+      </div>
+
+      <div class="panel hero-card">
+        <h3 style="margin-top:0;">What the app does</h3>
+        <p style="color:var(--muted); margin:0;">
+          Users configure reactor type, rod geometry, fuel, structural materials, and operating assumptions.
+          The application then estimates rod lifetime, core procurement cost, lifecycle fuel-cycle cost, and normalized
+          economics such as <strong>$/MWh</strong>.
+        </p>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="label">Modes</div>
+            <div class="value">2</div>
+          </div>
+          <div class="metric">
+            <div class="label">Fuel options</div>
+            <div class="value">3</div>
+          </div>
+          <div class="metric">
+            <div class="label">Cost basis</div>
+            <div class="value">INL / ORNL</div>
+          </div>
+          <div class="metric">
+            <div class="label">Optimization target</div>
+            <div class="value">Min $/MWh</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="overview">
+      <h2 class="section-title">Project Overview</h2>
+      <p class="section-sub">
+        The tool was built to support reactor design exploration for small modular reactors by linking geometry,
+        materials, operating assumptions, and fuel-cycle economics in one interactive workflow.
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Design Inputs</h3>
+          <p>Users choose reactor type, rod length, rod diameter, rod count, fuel type, and structural materials.</p>
+        </div>
+        <div class="card">
+          <h3>Physics Model</h3>
+          <p>Fuel mass is estimated from rod geometry, then burnup is used to approximate total thermal energy and rod lifetime.</p>
+        </div>
+        <div class="card">
+          <h3>Economic Outputs</h3>
+          <p>The app reports procurement cost, lifecycle fuel-cycle cost, annual cost proxies, and normalized $/MWh metrics.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-sub">
+        The application follows a simple engineering pipeline from geometry to energy to economics.
+      </p>
+      <div class="workflow">
+        <div class="step">
+          <div class="num">1</div>
+          <strong>Set geometry</strong>
+          <div style="color:var(--muted); font-size:14px; margin-top:6px;">Rod length, diameter, rod count</div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <strong>Select materials</strong>
+          <div style="color:var(--muted); font-size:14px; margin-top:6px;">UO₂, MOX, TRISO and hardware materials</div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <strong>Estimate fuel mass</strong>
+          <div style="color:var(--muted); font-size:14px; margin-top:6px;">Heavy metal mass derived from calibrated geometry</div>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
+          <strong>Compute energy</strong>
+          <div style="color:var(--muted); font-size:14px; margin-top:6px;">Burnup × fuel mass → total thermal energy</div>
+        </div>
+        <div class="step">
+          <div class="num">5</div>
+          <strong>Evaluate cost</strong>
+          <div style="color:var(--muted); font-size:14px; margin-top:6px;">Front-end + fabrication + hardware + backend</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:18px;">
+        <div class="card">
+          <h3>Power modes</h3>
+          <ul class="clean">
+            <li><strong>Fixed reactor power:</strong> given core thermal power, the app sizes rod count using an assumed linear heat rate for the chosen SMR type.</li>
+            <li><strong>Power scales with rod count:</strong> core thermal power is computed from rod count, rod length, and an assumed linear heat rate.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Burnup-based lifetime</h3>
+          <p>
+            The model converts burnup from <strong>GWd/tHM</strong> into total thermal energy. That energy is then divided by annual thermal
+            production to estimate the rod replacement interval.
+          </p>
+          <div class="code">E_th (kWh) = Burnup (GWd/tHM) × Fuel mass (tHM) × 24 × 1,000,000</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metrics">
+      <h2 class="section-title">Reported Metrics</h2>
+      <p class="section-sub">The application focuses on metrics that are useful for comparing fuel designs fairly.</p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Core procurement cost</h3>
+          <p>Estimated cost of front-end fuel services, fabrication process cost, and structural hardware for the modeled core.</p>
+        </div>
+        <div class="card">
+          <h3>Rod change interval</h3>
+          <p>Estimated fuel lifetime before replacement, based on burnup, fuel mass, power, and capacity factor.</p>
+        </div>
+        <div class="card">
+          <h3>Lifecycle $/MWh</h3>
+          <p>Fuel-cycle cost normalized by energy produced. This is the best metric for comparing fuel options with different energy densities.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="tech">
+      <h2 class="section-title">Technical Resources</h2>
+      <p class="section-sub">The project combines a lightweight web interface with engineering calculations and published cost references.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Software</h3>
+          <ul class="clean">
+            <li>Python</li>
+            <li>Streamlit for the interactive web UI</li>
+            <li>Standard numerical calculations in Python</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Engineering basis</h3>
+          <ul class="clean">
+            <li>Burnup-based fuel energy calculations</li>
+            <li>Representative fuel-cycle cost modules (INL What-It-Takes style inputs)</li>
+            <li>Reference PWR fuel assembly calibration inspired by ORNL assembly data</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="setup">
+      <h2 class="section-title">Run the Project</h2>
+      <p class="section-sub">Clone the repository, install dependencies, and launch the Streamlit application locally.</p>
+      <div class="card">
+        <div class="code">pip install -r requirements.txt
+streamlit run app.py</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    <div>
+      Built as an SMR design exploration tool for combining reactor physics approximations with fuel-cycle economics and optimization.
+    </div>
+  </footer>
+</body>
+</html>
