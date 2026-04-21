@@ -145,12 +145,46 @@ This is the most practical next step because the project already has:
 
 ```text
 .
-├── controller_bot.py        # main controller
-├── optimize.py             # future parameter search / optimization runner
-├── logs/                   # run outputs and debug artifacts
-├── analysis/               # scripts for score/error analysis
-└── README.md               # project overview
+├── window.py
+├── observer.py
+└── README.md
 ```
+
+## Current Repository Files
+
+### `observer.py`
+
+This script was used during the reverse-engineering and inspection phase of the project.
+
+Its main purpose is to observe how the Manchester Nuclear Reactor Simulator behaves inside the browser by collecting useful runtime information such as:
+
+* network requests
+* console messages
+* page state
+* browser-side simulator behavior
+
+This helped determine that the simulator is primarily client-side and that the most useful control and monitoring pathways are exposed through browser-side JavaScript objects rather than a traditional public gameplay API.
+
+### `window.py`
+
+This script is the main browser interaction and automation layer for the project.
+
+It is responsible for:
+
+* opening the simulator in the browser
+* reading live simulator state
+* interacting with the simulator controls
+* serving as the foundation for the automated controller
+
+This file represents the current working base for automated gameplay and future controller tuning.
+
+## Planned Additions
+
+As the project develops further, the repository may be extended with additional files for:
+
+* automated parameter optimization
+* experiment analysis and comparison
+* saved logs and controller evaluation tools
 
 ## Example Research Questions
 
